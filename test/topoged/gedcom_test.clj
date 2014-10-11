@@ -79,7 +79,9 @@
   (prop/for-all [[rtnval lines persons] gen-gedcom]
                 (is (= :HEAD (:tag( first rtnval))))
                 (every? identity
-                        (map compare-record rtnval lines))))
+                        (map compare-record 
+                             rtnval 
+                             lines))))
             
 
 

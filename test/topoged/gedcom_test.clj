@@ -113,7 +113,7 @@
 ;; * start with a HEAD record
 ;; * all 0 level records tags match the input
 
-(ct/defspec test-gedcom-seq 100
+(ct/defspec test-gedcom-seq 50
   (prop/for-all [[rtnval lines persons] gen-gedcom]
                 (is (= :HEAD (:tag( first rtnval))))
                 (let [parts (partition-starting-every (level? \0) lines)]

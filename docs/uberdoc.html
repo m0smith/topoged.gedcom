@@ -2910,14 +2910,28 @@ the sub-stanzas to the :content of the record</p>
              subparts (partition-starting-every (level? level) prt)]
          (reduce conj [] (map gedcom-reduce-content subparts))))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defrecord GedcomAttrributes [level line-number representation])
-(defrecord GedcomRecord [tag value attrs content])</pre></td></tr><tr><td class="docs"><p>Convert a line from a gedcom file into a vector with level and a map</p>
+(defrecord GedcomRecord [tag value attrs content])</pre></td></tr><tr><td class="docs"><p>Return a collection of GedcomRecord matching the tags.</p>
+
+<p>  For example to get the given names of an individual use [:INDI :NAME :GIVN]</p>
+</td><td class="codes"><pre class="brush: clojure">(defn get-at 
+  [rec tags]
+  (letfn [(get* [recs [tag &amp; tags]]
+            (if tag
+              (let [f (if (seq tags) (partial mapcat :content) (partial map identity))]
+                (recur
+                 (f (filter #(do (= tag (:tag %))) recs))
+                 tags))
+              recs))]
+    (get* [rec] tags)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn get-value-at [rec tags]
+  (map :value (get-at rec tags)))</pre></td></tr><tr><td class="docs"><p>Convert a line from a gedcom file into a vector with level and a map</p>
 </td><td class="codes"><pre class="brush: clojure">(defn gedcom-line-to-record
   [lineno line]
   (let [[level preid prerest]  (str/split line #&quot; &quot; 3)
         [id value] (if (re-matches #&quot;@.*@&quot; preid) [prerest preid] [preid prerest])
         attrmap {:level level :tag id}
 	attrs (GedcomAttrributes. level lineno line) ]
-    [level (GedcomRecord. (keyword id) value attrs nil)]))</pre></td></tr><tr><td class="docs"><p>Get a vector with [level GedcomRecord] and return the source line</p>
+    [level (GedcomRecord. (keyword (str/trim id)) value attrs nil)]))</pre></td></tr><tr><td class="docs"><p>Get a vector with [level GedcomRecord] and return the source line</p>
 </td><td class="codes"><pre class="brush: clojure">(defn source-line 
   [[level rec]]  (-&gt; rec :attrs :representation))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn gedcom-partitions  [inseq]

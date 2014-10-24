@@ -70,12 +70,16 @@ the sub-stanzas to the :content of the record"
   [rec tags]
   (letfn [(get* [recs [tag & tags]]
             (if tag
-              (recur
-               (mapcat :content (filter #(= tag (:tag %)) recs))
-               tags)
+              (let [f (if (seq tags) (partial mapcat :content) (partial map identity))]
+                (recur
+                 (f (filter #(do (= tag (:tag %))) recs))
+                 tags))
               recs)
             )]
     (get* [rec] tags)))
+
+(defn get-value-at [rec tags]
+  (map :value (get-at rec tags)))
            
   
 

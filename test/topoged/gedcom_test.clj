@@ -122,7 +122,31 @@
                           (map compare-record 
                                rtnval 
                                parts)))))
+
+
+(def gen-get-at
+  ""
+  (gen/fmap (fn [geds] 
+              (for [ged geds]
+                (map (juxt 
+                      #(get-value-at % [:INDI :NAME]) 
+                      #(get-value-at % [:INDI :NAME :GIVN]) 
+                      #(get-value-at % [:INDI :NAME :SURN]) 
+                      )
+                      ged)))
+              gen-gedcom))
                              
-            
+(defn to-full-name [given surname]
+  (str given " /" surname "/"))
+
+(ct/defspec test-get-value-at 50
+  (prop/for-all [result gen-get-at]
+                (every? (partial apply =)
+                        (for [h result
+                              [full-names given-names surnames] h
+                              rtnval  (map #(vector %1 (to-full-name %2 %3)) full-names given-names surnames)]
+                          rtnval))))
+                            
+
 
 

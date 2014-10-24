@@ -12,21 +12,51 @@
   (gen/fmap (fn [f] (str "@" f "@"))
         (gen/not-empty gen/string-alpha-numeric)))
 
-(def gen-name (gen/not-empty gen/string-alpha-numeric))
+(def gen-name-value (gen/not-empty gen/string-alpha-numeric))
+
+(defrecord LevelN [level v1 v2])
+
+(defn new-level [level tag id]
+  (if (= level 0)
+    (->LevelN "0" id tag)
+    (->LevelN (str level) tag id)))
+
+(defn levelstr [{:keys [level v1 v2]}]
+  (str level " " v1 " " v2 \newline))
+
 
 (def gen-person
-  (gen/tuple gen-id gen-name gen-name))
+  (gen/tuple gen-id gen-name-value gen-name-value))
 
 (def gen-header (gen/return (str "0 HEAD" \newline)))
 
+(defn gen-level
+  ""
+  [level tag value-gen]
+  (gen/fmap (partial new-level level tag)
+            value-gen))
+
+(defn gen-name-det "" [[given surname]]
+  (gen/tuple
+   (gen-level 1 "NAME" (gen/return (str given " /" surname "/")))
+   (gen-level 2 "GIVN" (gen/return given))
+   (gen-level 2 "SURN" (gen/return surname))))
+
+(def gen-name
+  ""
+  (gen/bind (gen/tuple gen-name-value gen-name-value)
+            gen-name-det))
+
+(defn gen-indi 
+  ""
+  [[id given surn :as person]]
+  (gen/tuple
+   (gen-level 0 "INDI" (gen/return id))
+   (gen/list gen-name)))
+   
+
 (defn gen-indis [persons0]
-  (gen/fmap (fn [persons]
-              (for [[id given-name surname :as person] persons]
-                (str "0 "id " INDI " \newline
-                     "1 NAME " given-name " /" surname "/" \newline
-                     "2 GIVN " given-name  \newline
-                     "2 SURN " surname  \newline)))
-            (gen/return persons0)))
+  (apply gen/tuple (map gen-indi persons0)))
 
 (defn random-fam [persons]
   (let [family (take (rand-int (count persons)) (shuffle persons))
@@ -42,16 +72,24 @@
              gen-id 
              (gen/return persons0))))
 
+(defn levels->str [levels]
+  (->> levels
+       flatten
+       (map levelstr)
+       (apply str)))
+
 (defn gen-it [persons]
   (gen/fmap (fn [[h p f]]
-              [(apply str h (apply str p) (apply str f))
+              [(apply str h 
+                      (levels->str p) 
+                      (apply str f))
                persons])
             (gen/tuple gen-header
                        (gen-indis persons)
                        (gen/list (gen-fam persons)))))
 (def gen-gedcom*
-  (gen/bind  (gen/list gen-person)
-             gen-it))
+  (gen/bind (gen/list gen-person)
+            gen-it))
 
 (def gen-gedcom
   (gen/fmap (fn [[rtnval persons]] 
@@ -62,14 +100,14 @@
             gen-gedcom*))
              
 
-(defn tag-from-line [line]
-  (let [[level p1 p2] (string/split line #" ")]
+(defn tag-from-line [part]
+  (let [[level p1 p2] (string/split (first part) #" ")]
     (if (= level "0")
       (or p2 p1) 
       p1)))
 
-(defn compare-record [rec line]
-  (is (= (name (:tag rec)) (tag-from-line line))))
+(defn compare-record [rec part]
+  (is (= (name (:tag rec)) (tag-from-line part))))
   
 ;; Properties
 ;; * start with a HEAD record
@@ -78,10 +116,13 @@
 (ct/defspec test-gedcom-seq 100
   (prop/for-all [[rtnval lines persons] gen-gedcom]
                 (is (= :HEAD (:tag( first rtnval))))
-                (every? identity
-                        (map compare-record 
-                             rtnval 
-                             lines))))
+                (let [parts (partition-starting-every (level? \0) lines)]
+                  ;(println parts)
+                  (every? identity
+                          (map compare-record 
+                               rtnval 
+                               parts)))))
+                             
             
 
 

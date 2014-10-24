@@ -63,6 +63,22 @@ the sub-stanzas to the :content of the record"
 (defrecord GedcomAttrributes [level line-number representation])
 (defrecord GedcomRecord [tag value attrs content])
 
+(defn get-at 
+  "Return a collection of GedcomRecord matching the tags.
+
+  For example to get the given names of an individual use [:INDI :NAME :GIVN]"
+  [rec tags]
+  (letfn [(get* [recs [tag & tags]]
+            (if tag
+              (recur
+               (mapcat :content (filter #(= tag (:tag %)) recs))
+               tags)
+              recs)
+            )]
+    (get* [rec] tags)))
+           
+  
+
 (defn gedcom-line-to-record
   "Convert a line from a gedcom file into a vector with level and a map"
   [lineno line]

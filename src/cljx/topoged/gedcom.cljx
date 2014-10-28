@@ -1,7 +1,7 @@
 (ns topoged.gedcom
-  (:use clojure.pprint)
   (:use [ clojure.java.io :only [reader]])
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [clojure.pprint :refer :all])
   )
 
 

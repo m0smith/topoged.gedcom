@@ -1,11 +1,5 @@
 (ns topoged.gedcom
-  (:use [ clojure.java.io :only [reader]])
-  (:require [clojure.string :as str]
-            [clojure.pprint :refer :all])
-  )
-
-
-(set! *warn-on-reflection* true)
+  (:require [clojure.string :as str]))
 
 (defn partition-starting-every
   "Partition the sequence starting each partition when the f is true.  Thanks to Chouser http://groups.google.com/group/clojure/msg/9ec39ef07c92787b"
@@ -125,13 +119,9 @@ the sub-stanzas to the :content of the record"
 ;  (map # (gedcom-reduce-content %) 
 ;           (gedcom-partitions f)))
 
+(comment 
 
-(defn parse
-  "Parse a GEDCOM file and produce an structure similar to the xml parse."
-  [f] (with-open [rdr (reader f)]
-	(let [content (reduce conj [] (gedcom-seq rdr))]
-	  { :tag :GEDCOM :content content})) )
-
+)
 
 (defn INDI [f]
   (let [c (-> f :content)
@@ -144,6 +134,12 @@ the sub-stanzas to the :content of the record"
 ;; test stuff
 ;;
 (comment
+  (defn parse
+  "Parse a GEDCOM file and produce an structure similar to the xml parse."
+  [f] (with-open [rdr (reader f)]
+	(let [content (reduce conj [] (gedcom-seq rdr))]
+	  { :tag :GEDCOM :content content})) )
+
   (def file "src/test/resources/simple.ged")
 
   (def parts (gedcom-partitions file))
